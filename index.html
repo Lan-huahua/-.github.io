@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>学生姓名随机排序（带Word导出）</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 16px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            flex: 1;
+        }
+        #startBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #startBtn:hover {
+            background-color: #45a049;
+        }
+        #stopBtn {
+            background-color: #f44336;
+            color: white;
+            display: none;
+        }
+        #stopBtn:hover {
+            background-color: #d32f2f;
+        }
+        #resetBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #resetBtn:hover {
+            background-color: #0b7dda;
+        }
+        #exportBtn {
+            background-color: #FF9800;
+            color: white;
+        }
+        #exportBtn:hover {
+            background-color: #e68a00;
+        }
+        .animation-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-height: 100px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #shufflingName {
+            font-size: 24px;
+            font-weight: bold;
+            color: #FF5722;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .result-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 18px;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .export-area {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .instructions {
+            font-size: 14px;
+            color: #666;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 学生姓名随机排序</h1>
+    
+    <div class="input-area">
+        <p>请输入学生姓名，每行一个：</p>
+        <textarea id="names" placeholder="例如：&#10;张三&#10;李四&#10;王五&#10;赵六&#10;..."></textarea>
+        
+        <div class="buttons">
+            <button id="startBtn" onclick="startShuffling()">开始随机</button>
+            <button id="stopBtn" onclick="stopShuffling()">停止并排序</button>
+            <button id="resetBtn" onclick="resetAll()">重置</button>
+        </div>
+    </div>
+    
+    <div class="animation-area">
+        <div id="shufflingName">准备开始...</div>
+    </div>
+    
+    <div class="result-area" id="resultArea" style="display: none;">
+        <h3>🎉 随机排序结果：</h3>
+        <div id="resultList"></div>
+        
+        <div class="export-area">
+            <button id="exportBtn" onclick="exportToWord()">导出为Word文档</button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <p><strong>使用说明：</strong></p>
+        <ol>
+            <li>在文本框中输入学生姓名，每行一个</li>
+            <li>点击"开始随机"按钮开始随机闪动名字</li>
+            <li>点击"停止并排序"按钮停止并显示最终排序结果</li>
+            <li>点击"导出为Word文档"按钮下载排序结果</li>
+            <li>点击"重置"按钮可以重新开始</li>
+        </ol>
+    </div>
+
+    <script>
+        let names = [];
+        let shufflingInterval;
+        let isShuffling = false;
+        const shufflingSpeed = 100; // 闪动速度(毫秒)
+        
+        // 开始随机闪动
+        function startShuffling() {
+            // 获取输入的名字
+            const namesText = document.getElementById('names').value;
+            names = namesText.split('\n').filter(name => name.trim() !== '');
+            
+            if (names.length === 0) {
+                alert('请输入至少一个学生姓名！');
+                return;
+            }
+            
+            // 显示动画区域
+            document.getElementById('shufflingName').textContent = "准备开始...";
+            
+            // 切换按钮状态
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            
+            // 隐藏之前的结果
+            document.getElementById('resultArea').style.display = 'none';
+            
+            // 开始随机闪动
+            isShuffling = true;
+            let counter = 0;
+            
+            shufflingInterval = setInterval(() => {
+                if (!isShuffling) return;
+                
+                // 随机选择一个名字显示
+                const randomIndex = Math.floor(Math.random() * names.length);
+                document.getElementById('shufflingName').textContent = names[randomIndex];
+                
+                // 添加一些视觉效果
+                counter++;
+                const element = document.getElementById('shufflingName');
+                element.style.transform = `scale(${1 + Math.sin(counter/5) * 0.1})`;
+                element.style.color = `hsl(${counter % 360}, 80%, 50%)`;
+                
+            }, shufflingSpeed);
+        }
+        
+        // 停止随机并显示结果
+        function stopShuffling() {
+            if (!isShuffling) return;
+            
+            // 停止动画
+            clearInterval(shufflingInterval);
+            isShuffling = false;
+            
+            // 切换按钮状态
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            
+            // 执行最终随机排序
+            shuffleNames();
+        }
+        
+        // 随机排序算法
+        function shuffleNames() {
+            // 洗牌算法 (Fisher-Yates)
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+            
+            // 显示最终结果
+            displayResult();
+        }
+        
+        // 显示排序结果
+        function displayResult() {
+            const resultList = document.getElementById('resultList');
+            resultList.innerHTML = '';
+            
+            names.forEach((name, index) => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.textContent = `${index + 1}. ${name}`;
+                resultList.appendChild(item);
+            });
+            
+            document.getElementById('resultArea').style.display = 'block';
+            document.getElementById('shufflingName').textContent = "排序完成！";
+            document.getElementById('shufflingName').style.color = '#4CAF50';
+            document.getElementById('shufflingName').style.transform = 'scale(1)';
+        }
+        
+        // 重置所有内容
+        function resetAll() {
+            // 停止任何正在进行的动画
+            clearInterval(shufflingInterval);
+            isShuffling = false;
+            
+            // 重置按钮状态
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            
+            // 重置显示区域
+            document.getElementById('shufflingName').textContent = "准备开始...";
+            document.getElementById('shufflingName').style.color = '#FF5722';
+            document.getElementById('shufflingName').style.transform = 'scale(1)';
+            
+            // 隐藏结果区域
+            document.getElementById('resultArea').style.display = 'none';
+            
+            // 清空输入框
+            document.getElementById('names').value = '';
+        }
+        
+        // 导出为Word文档
+        function exportToWord() {
+            if (names.length === 0) {
+                alert('没有可导出的数据！');
+                return;
+            }
+            
+            // 创建Word文档内容
+            let content = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+                      xmlns:w="urn:schemas-microsoft-com:office:word" 
+                      xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>学生随机排序结果</title>
+                    <style>
+                        body { font-family: "Microsoft YaHei", Arial, sans-serif; }
+                        h1 { color: #2E74B5; text-align: center; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th { background-color: #2E74B5; color: white; padding: 10px; }
+                        td { padding: 8px; border: 1px solid #ddd; }
+                        .odd { background-color: #f2f2f2; }
+                        .info { margin-top: 30px; font-size: 12px; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <h1>学生随机排序结果</h1>
+                    <p>生成时间：${new Date().toLocaleString()}</p>
+                    <table>
+                        <tr>
+                            <th>序号</th>
+                            <th>学生姓名</th>
+                        </tr>
+            `;
+            
+            // 添加学生数据
+            names.forEach((name, index) => {
+                const rowClass = index % 2 === 0 ? '' : 'class="odd"';
+                content += `
+                    <tr ${rowClass}>
+                        <td>${index + 1}</td>
+                        <td>${name}</td>
+                    </tr>
+                `;
+            });
+            
+            content += `
+                    </table>
+                    <div class="info">
+                        <p>本文件由学生姓名随机排序工具生成</p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            // 创建Blob对象
+            const blob = new Blob(['\ufeff', content], {
+                type: 'application/msword'
+            });
+            
+            // 创建下载链接
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `学生随机排序_${new Date().toISOString().slice(0, 10)}.doc`;
+            
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+    </script>
+</body>
+</html>
